@@ -49,7 +49,7 @@ spring:
       #配置StatViewServlet
       stat-view-servlet:
         login-username: admin
-        login-password: gbsz123
+        login-password: 123456
       #spring监听配置
       aop-patterns: 'com.wtown.suggest.service.*'
 
@@ -57,9 +57,9 @@ spring:
       one:
         type: com.alibaba.druid.pool.DruidDataSource
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://10.90.102.238:3306/report?characterEncoding=utf8&useSSL=true&serverTimezone=PRC&nullNamePatternMatchesAll=true
+        url: jdbc:mysql://localhost:3306/report?characterEncoding=utf8&useSSL=true&serverTimezone=PRC&nullNamePatternMatchesAll=true
         username: root
-        password: gbsz123
+        password: 123456
 
   aop:
     proxy-target-class: true
