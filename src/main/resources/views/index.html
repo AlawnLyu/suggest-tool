@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>宿舍举报</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link th:href="@{bootstrap/css/bootstrap.min.css}" rel="stylesheet"/>
+    <script th:src="@{js/jquery-3.3.1.min.js}" type="text/javascript"></script>
+    <script th:src="@{bootstrap/js/bootstrap.min.js}"></script>
+    <style type="text/css">
+        .img-div {
+            border: 1px solid #ddd;
+            border-radius: 100%;
+            float: left;
+            line-height: 1;
+            margin-left: 5px;
+            overflow: hidden;
+        }
+
+        .top {
+            margin-top: 40%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row top">
+        <div class="panel panel-primary">
+            <div class="panel-body">
+                <form id="form" method="post" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <textarea class="form-control" name="desc"
+                                      placeholder="请输入描述"></textarea>
+                        </div>
+                        <div id="uploadbox" class="col-md-12" style="display: none">
+                        </div>
+                        <div class="col-md-12">
+                            <div class="img-box" id="imgboxid">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="panel panel-deafult">
+            <div class="panel-body">
+                <div class="col-xs-6" style="display: inline-block;float: left;text-align: center;">
+                    <input class="btn btn-primary" type="button" onclick="choosepic()" value="添加图片">
+                </div>
+                <div class="col-xs-6" style="display: inline-block;float: left;text-align: center;">
+                    <input class="btn btn-primary" id="subbtn" data-loading-text="提交中..." type="button"
+                           onclick="submit()" value="提交">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="myModel" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">提示信息</h4>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p id="message" style="font-size: 2em;font-family: 'Microsoft YaHei';">One fine body&hellip;</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<script th:inline="javascript" type="text/javascript">
+    /*<![CDATA[*/
+    var context = /*[[@{/}]]*/ '/';
+    /*]]>*/
+    var count = 0;
+
+    //选择图片，马上预览
+    function xmTanUploadImg(obj) {
+        //var fl = obj.files.length;
+        var fl = obj.currentTarget.files.length;
+        for (var i = 0; i < fl; i++) {
+            var file = obj.currentTarget.files[i];
+            var reader = new FileReader();
+            //读取文件过程方法
+            reader.onloadstart = function (e) {
+                console.log("开始读取....");
+            }
+            reader.onprogress = function (e) {
+                console.log("正在读取中....");
+            }
+            reader.onabort = function (e) {
+                console.log("中断读取....");
+            }
+            reader.onerror = function (e) {
+                console.log("读取异常....");
+            }
+            reader.onload = function (e) {
+                console.log("成功读取....");
+
+                var imgstr = '<img style="width:100px;height:100px;" src="' + e.target.result + '"/>';
+                var oimgbox = document.getElementById("imgboxid");
+                var ndiv = document.createElement("div");
+
+                ndiv.innerHTML = imgstr;
+                ndiv.className = "img-div";
+                oimgbox.appendChild(ndiv);
+
+            }
+            reader.readAsDataURL(file);
+        }
+
+    }
+
+    function choosepic() {
+        if (count > 3) {
+            $('#message').html("最多上传3张图片！");
+            $('#myModel').modal('show');
+        } else {
+            var newFileInput = "<input id='uploaderInput' type='file' name='file' accept='image/*' multiple />";
+            $('#uploadbox').append($(newFileInput));
+            $("#uploaderInput").bind("change", function (e) {
+                if (e.currentTarget.files.length < 3) {
+                    count += e.currentTarget.files.length;
+                    if (count > 3) {
+                        count -= e.currentTarget.files.length;
+                        $('#message').html("最多上传3张图片！");
+                        $('#myModel').modal('show');
+                        $('#uploaderInput').remove();
+                        return;
+                    }
+                }
+                xmTanUploadImg(e);
+                $(this).removeAttr("id");
+            });
+            $("#uploaderInput").click();
+        }
+    }
+
+    function submit() {
+        dealdata();
+    }
+
+    function dealdata() {
+        var files = $('input[name="file"]');
+        var subbtn = $('#subbtn');
+        var formData = new FormData();
+        if ($('textarea[name="desc"]').val() == "") {
+            $('#message').html("请输入描述");
+            $('#myModel').modal('show');
+            return;
+        }
+        if (count == 0) {
+            $('#message').html("请选择要上传图片");
+            $('#myModel').modal('show');
+            return;
+        }
+        subbtn.button('loading');//禁用按钮并显示提交中
+        formData.append("desc", $('textarea[name="desc"]').val());
+        for (var i = 0; i < files.length; i++) {
+            for (var j = 0; j < files[i].files.length; j++) {
+                compressImage(files[i].files[j], function (file) {
+                    console.log(file);
+                    count--;
+                    formData.append('file[]', file, file.name);
+                    if (count == 0) {
+                        console.log(formData);
+                        $.ajax({
+                            url: context + 'uploads',
+                            type: 'POST',
+                            cache: false,
+                            data: formData,
+                            timeout: 5000,
+                            //必须false才会避开jQuery对 formdata 的默认处理
+                            // XMLHttpRequest会对 formdata 进行正确的处理
+                            processData: false,
+                            //必须false才会自动加上正确的Content-Type
+                            contentType: false,
+                            //xhrFields: {withCredentials: true},
+                            success: function (data) {
+                                $('#message').html(data);
+                                $('#myModel').modal('show');
+                                setTimeout(function () {
+                                    $('#myModel').modal('hide');
+                                    window.location.reload();
+                                }, 3000);
+                            },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                //subbtn.button('reset');//重置按钮
+                                $('#message').html("服务器错误");
+                                $('#myModel').modal('show');
+                                setTimeout(function () {
+                                    $('#myModel').modal('hide');
+                                    window.location.reload();
+                                }, 3000);
+                            }
+                        });
+                    }
+                }, $.noop());
+            }
+        }
+    }
+
+    function compressImage(file, success, error) {
+        // 图片小于1M不压缩
+        if (file.size < Math.pow(1024, 2)) {
+            return success(file);
+        }
+
+        const name = file.name; //文件名
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function (e) {
+            const src = e.target.result;
+
+            const img = new Image();
+            img.src = src;
+            img.onload = function (e) {
+                const w = img.width;
+                const h = img.height;
+                const quality = 0.8;  // 默认图片质量为0.92
+                //生成canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                // 创建属性节点
+                const anw = document.createAttribute("width");
+                anw.nodeValue = w;
+                const anh = document.createAttribute("height");
+                anh.nodeValue = h;
+                canvas.setAttributeNode(anw);
+                canvas.setAttributeNode(anh);
+
+                //铺底色 PNG转JPEG时透明区域会变黑色
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.drawImage(img, 0, 0, w, h);
+                // quality值越小，所绘制出的图像越模糊
+                const base64 = canvas.toDataURL('image/jpeg', quality); //图片格式jpeg或webp可以选0-1质量区间
+
+                // 返回base64转blob的值
+                //console.log(`原图${(src.length/1024).toFixed(2)}kb`, `新图${(base64.length/1024).toFixed(2)}kb`);
+                //去掉url的头，并转换为byte
+                const bytes = window.atob(base64.split(',')[1]);
+                //处理异常,将ascii码小于0的转换为大于0
+                const ab = new ArrayBuffer(bytes.length);
+                const ia = new Uint8Array(ab);
+                for (var i = 0; i < bytes.length; i++) {
+                    ia[i] = bytes.charCodeAt(i);
+                }
+                file = new Blob([ab], {type: 'image/jpeg'});
+                file.lastModifiedDate = new Date();
+                file.name = name;
+                success(file);
+            }
+            img.onerror = function (e) {
+                error(e);
+            }
+        }
+        reader.onerror = function (e) {
+            error(e);
+        }
+    }
+</script>
+</body>
+</html>
